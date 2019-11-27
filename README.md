@@ -53,7 +53,30 @@ To make the most use of the logs you should configure fluentd to extract some of
     
  ## Use logstash for monitoring
  
- If you have problems with the fluentd pods not sending all the logs there is also a configuration provided to use Filebeat and Logstash instead. Just create the cluster without the monitoring enabled:
+If you have problems with the fluentd pods not sending all the logs there is also a configuration provided to use Filebeat and Logstash instead. Just create the cluster without the monitoring enabled:
  
     helm install --values=logstash.yaml --name=logstash --namespace=monitoring stable/logstash
     helm install --values=filebeat.yaml --name=filebeat --namespace=monitoring stable/filebeat
+
+## Setup ingress
+
+The ingress is needed for the servers and the prometheus dashboard. Some nodes have to be dedicated to run the ingress by setting a label:
+
+    kubectl label node <minion name> role=ingress
+    
+You can also easily setup a DNS entry for loadbalancing:
+
+    openstack server set --property landb-alias=myclusterdns--load-1- <minion name>
+    
+## Add ingress for the Prometheus Grafana dashboard
+ 
+To get easy access to the Grafana dashboard just use the provided ingress configuration. Just set the hostname or DNS name first:
+
+    <editor> prometheus_ingress.yaml
+    kubectl apply -f prometheus_ingress.yaml
+    
+The password is configured in the cluster template. To change is first run base64 on the new password and then change it in the secret:
+
+    echo "<password>" | base64
+    kubectl edit secret prometheus-operator-grafana -n kube-system
+    kubectl get pods -l app=grafana,release=prometheus-operator -n kube-system
