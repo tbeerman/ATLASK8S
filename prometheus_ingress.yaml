@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+  app: grafana
+  name: prometheus-operator-grafana
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/frontend-entry-points: http
+    traefik.ingress.kubernetes.io/protocol: http
+spec:
+  rules:
+  - host: atlasrucioint-dashboard.cern.ch
+    http:
+      paths:
+      - backend:
+          serviceName: prometheus-operator-grafana
+          servicePort: 80
+        path: /

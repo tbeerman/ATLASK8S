@@ -1,0 +1,107 @@
+image:
+  tag: 7.3.2
+
+persistence:
+  enabled: false
+  service:
+    type: NodePort
+
+volumeMounts:
+  - name: data
+    mountPath: /usr/share/logstash/data
+  - name: patterns
+    mountPath: /usr/share/logstash/patterns
+  - name: files
+    mountPath: /usr/share/logstash/files
+  - name: pipeline
+    mountPath: /usr/share/logstash/pipeline
+
+exporter:
+  logstash:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      release: prometheus-operator
+
+inputs:
+  main: |-
+    input {
+      beats {
+        port => 5044
+      }
+    }
+
+filters:
+  main: |-
+    filter {
+      mutate {
+        add_field => {"producer" => "atlasruciok8s"}
+      }
+      if [kubernetes][labels][app] == "rucio-server" {
+        mutate { add_field => {"type" => "server"} }
+        mutate { remove_field => [ "host" ] } 
+        if [message] =~ "kube-probe" or [message] =~ "health-check" {
+          drop { }
+        }
+        if [stream] == "stdout" {
+          grok {
+            match => {"message" => '%{DATA}\t%{DATA:frontend}\t%{DATA:backend}\t%{DATA:clientip}\t%{DATA:requestid}\t%{NUMBER:status}\t%{NUMBER:bytesinput}\t%{NUMBER:bytesoutput}\t%{NUMBER:duration}\t"%{WORD:method} %{URIPATHPARAM:request} %{DATA:http}"\t"%{DATA:token}"\t"%{DATA:ua}"\t%{GREEDYDATA:scriptid}'}
+            tag_on_failure => "_failed_parsing_restcall"
+          }
+
+          if !("_failed_parsing_restcall" in [tags]) {  # A REST-API call was executed
+
+            grok {
+              match => { "token" => "%{WORD:account}-%{GREEDYDATA:username}-%{DATA}" }
+              remove_field => [ "token" ]
+            }
+
+            grok {
+              match => { "ua" => "%{DATA:[useragent][name]}/%{NOTSPACE:[useragent][version]}" }
+              remove_field => [ "ua" ]
+              tag_on_failure => "_failed_parsing_useragent"
+            }
+
+            if "_failed_parsing_useragent" in [tags] {  # In case the grok above didn't match, the raw useragent string from the log is used
+              mutate {
+                add_field => { "[useragent][name]" => "%{ua}" }
+                remove_field => [ "ua" ]
+                remove_tag => [ "_failed_parsing_useragent" ]
+              }
+            }
+
+            if [clientip] =~ '\,\s' { mutate { gsub => ["clientip", ",\s.*$", ""] } } # Split client IP in case of proxy-forward (e.g. webui)
+
+            geoip {  # Resolve Client GEOIP
+              source => "clientip"
+              target => "client"
+              remove_field => [ "clientip" ]
+            }
+          }
+        }
+      } else if [kubernetes][labels][app] == "rucio-daemons" {
+        mutate { add_field => {"type" => "daemons"} }
+        mutate { add_field => { "application" => "%{[kubernetes][container][name]}" }}
+        if [stream] == "stdout" {
+          grok {
+            match => { "message" => "^(?<ts>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3})\t%{NUMBER:pid}\t%{LOGLEVEL:severity_label}\t%{GREEDYDATA:message}" }
+            overwrite => ["message", "severity_label", "ts"]
+            tag_on_failure => "_failed_parsing_ruciolog"
+          }
+        }
+      } else {
+        mutate {add_field => {"type" => "generic"}}
+      }
+    }
+
+outputs:
+  main: |-
+    output {
+      http {
+        url => "http://monit-logsource-7c8778932a.cern.ch:10012/"
+        format => "json"
+        http_method => "post"
+      }
+    }

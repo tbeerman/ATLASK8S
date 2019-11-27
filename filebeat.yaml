@@ -1,0 +1,17 @@
+image:
+  tag: 7.3.2
+
+config:
+  output:
+    file.enabled:
+      false
+    logstash:
+      hosts: ['logstash:5044']
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      release: prometheus-operator
