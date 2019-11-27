@@ -2,12 +2,12 @@
 
 This repository contains a set of instructions and scripts to setup a Kubernetes cluster to run Rucio for ATLAS.
 
-# First time setup for CERN Openstack
+## First time setup for CERN Openstack
 
 Follow the steps from the CERN cloud docs to initialize your environment on lxplus-cloud:
 https://clouddocs.web.cern.ch/tutorial/create_your_openstack_profile.html
 
-# Install a new cluster
+## Install a new cluster
 
 If not already done create a new cluster template. A cluster template with all necessary settings is provided and can be adapted as needed:
 
@@ -28,3 +28,32 @@ If the cluster is in state CREATE_COMPLETE you can get the configuration, initia
     openstack coe cluster config mykubcluster > env.sh
     . env.sh
     kubeget get nodes
+
+## Install helm in the cluster
+
+Helm is needed to install Rucio and some some other services in the cluster. No changes are needed, just run:
+
+    ./install_helm.sh
+    
+## Install secrets
+
+Some of the daemons need CAs to work that have to installed as secrets in the cluster. Before running the script adapt the DAEMON_NAME variable to match the name of the daemons release you will install in the cluster:
+
+    <editor> create_secrets.sh
+    ./create_secrets.sh
+    
+Furthermore the longproxy has to be installed in the cluster. To do so go to rucio-nagios-prod-03.cern.ch and adapt and run `/usr/local/bin/update-k8s-longproxy`.
+
+## Setup logging
+
+A CERN Monit logging producer is available and configured in the template. Without doing anything it will start to send out all the logs from the cluster to monit-timber and they can be accessed at https://monit-timber-atlasruciok8s.cern.ch.
+To make the most use of the logs you should configure fluentd to extract some of the fields from the server and daemon logs. These include things like the http status code, rucio account name, request duration, etc. and they can then be used in visulizations in Kibana:
+    
+    ./configure_fluentd.sh
+    
+ ## Use logstash for monitoring
+ 
+ If you have problems with the fluentd pods not sending all the logs there is also a configuration provided to use Filebeat and Logstash instead. Just create the cluster without the monitoring enabled:
+ 
+    helm install --values=logstash.yaml --name=logstash --namespace=monitoring stable/logstash
+    helm install --values=filebeat.yaml --name=filebeat --namespace=monitoring stable/filebeat
