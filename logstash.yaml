@@ -2,9 +2,10 @@ image:
   tag: 7.3.2
 
 persistence:
-  enabled: false
-  service:
-    type: NodePort
+  enabled: true
+  storageClass: "meyrin-cephfs"
+  accessMode: ReadWriteOnce
+  size: 20Gi
 
 volumeMounts:
   - name: data
@@ -100,7 +101,7 @@ outputs:
   main: |-
     output {
       http {
-        url => "http://monit-logsource-7c8778932a.cern.ch:10012/"
+        url => "http://monit-logs.cern.ch:10012/"
         format => "json"
         http_method => "post"
       }
