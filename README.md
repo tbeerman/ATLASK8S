@@ -29,6 +29,12 @@ If the cluster is in state CREATE_COMPLETE you can get the configuration, initia
     > . env.sh
     > kubeget get nodes
 
+## Install helm in the cluster
+
+Helm is needed to install Rucio and some some other services in the cluster. No changes are needed, just run:
+
+    > ./install_helm.sh
+
 ## Prometheus setup
 
 ### Add a PVC to Prometheus
@@ -59,11 +65,12 @@ The password is configured in the cluster template. To change is first run base6
     > kubectl edit secret prometheus-operator-grafana -n kube-system
     > kubectl delete pods -l app=grafana,release=prometheus-operator -n kube-system
 
-## Install helm in the cluster
+### Add Pushgateway
 
-Helm is needed to install Rucio and some some other services in the cluster. No changes are needed, just run:
+Some of the Rucio metrics are provided directly from server and daemons are will be automatically collected if enabled in the release. But a lot of useful metrics, like request queues, waiting rules, etc., are coming from probes that run regularly. For this usecase there a tool called Pushgateway available. It's installed in the cluster with an ingress and it simply works as a cache. The probes report to this server and Prometheus can collect it from there. First edit the values to adapt the hostname and the you can install it with helm:
 
-    > ./install_helm.sh
+    > <editor> pushgateway-values.yaml
+    > helm install -f pushgateway-values.yaml --namespace=monitoring --name=pushgateway stable/prometheus-pushgateway
     
 ## Install secrets
 
