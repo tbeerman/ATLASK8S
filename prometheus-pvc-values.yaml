@@ -1,0 +1,76 @@
+alertmanager:
+  alertmanagerSpec:
+    image:
+      repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/alertmanager
+    priorityClassName: system-cluster-critical
+coreDns:
+  enabled: true
+  service:
+    port: 9153
+    selector:
+      k8s-app: coredns
+    targetPort: 9153
+fullnameOverride: prometheus
+grafana:
+  adminPassword: admin
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+kube-state-metrics:
+  priorityClassName: system-cluster-critical
+  resources:
+    limits:
+      cpu: 50m
+      memory: 64M
+kubeApiServer:
+  tlsConfig:
+    insecureSkipVerify: false
+kubeEtcd:
+  serviceMonitor:
+    caFile: /etc/prometheus/secrets/etcd-certificates/ca.crt
+    certFile: /etc/prometheus/secrets/etcd-certificates/kubelet.crt
+    insecureSkipVerify: true
+    keyFile: /etc/prometheus/secrets/etcd-certificates/kubelet.key
+    scheme: https
+kubelet:
+  serviceMonitor:
+    https: https
+nameOverride: prometheus
+prometheus:
+  prometheusSpec:
+    evaluationInterval: 1m
+    image:
+      repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/prometheus
+    priorityClassName: system-cluster-critical
+    resources:
+      requests:
+        cpu: 198m
+        memory: 656M
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: meyrin-cephfs
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    retention: 14d
+    scrapeInterval: 1m
+prometheus-node-exporter:
+  priorityClassName: system-node-critical
+  resources:
+    limits:
+      cpu: 20m
+      memory: 20M
+prometheusOperator:
+  configmapReloadImage:
+    repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/configmap-reload
+  hyperkubeImage:
+    repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/hyperkube
+  image:
+    repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/prometheus-operator
+  priorityClassName: system-cluster-critical
+  prometheusConfigReloaderImage:
+    repository: gitlab-registry.cern.ch/cloud/atomic-system-containers/prometheus-config-reloader
+

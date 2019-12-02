@@ -2,7 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   labels:
-  app: grafana
+    app: grafana
   name: prometheus-operator-grafana
   namespace: kube-system
   annotations:
@@ -11,7 +11,7 @@ metadata:
     traefik.ingress.kubernetes.io/protocol: http
 spec:
   rules:
-  - host: atlasrucioint-dashboard.cern.ch
+  - host: atlasrucioint3-dashboard.cern.ch
     http:
       paths:
       - backend:
