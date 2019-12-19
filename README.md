@@ -71,7 +71,22 @@ Some of the Rucio metrics are provided directly from server and daemons are will
 
     > <editor> pushgateway-values.yaml
     > helm install -f pushgateway-values.yaml --namespace=monitoring --name=pushgateway stable/prometheus-pushgateway
+
+### Make metrics available in the custom metrics API
+
+The prometheus metrics have to be made available in the custom metrics API so that they can be used for the horizontal pod autoscaler. The Prometheus adapter is used for that and can be install with helm:
+
+    > helm install -f prometheus-adapter.yaml --namespace=monitoring --name prometheus-adapter stable/prometheus-adapter
+
+After a short time all prometheus metrics should be available in the API which can be checked with:
+
+    > kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1
     
+Specific Rucio metrics can be found in the rucio namespace and can be queried like this:
+
+    > kubectl get --raw /apis/custom.metrics.k8s.io/v1beta1/namespaces/rucio/metrics/rucio_reaper_expired_replicas
+    {"kind":"MetricValueList","apiVersion":"custom.metrics.k8s.io/v1beta1","metadata":{"selfLink":"/apis/custom.metrics.k8s.io/v1beta1/namespaces/rucio/metrics/rucio_reaper_expired_replicas"},"items":[{"describedObject":{"kind":"Namespace","name":"rucio","apiVersion":"/v1"},"metricName":"rucio_reaper_expired_replicas","timestamp":"2019-12-19T11:55:08Z","value":"86578084"}]}
+
 ## Install secrets
 
 Some of the daemons need CAs to work that have to installed as secrets in the cluster. Before running the script adapt the DAEMON_NAME variable to match the name of the daemons release you will install in the cluster:
