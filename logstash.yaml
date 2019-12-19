@@ -1,11 +1,13 @@
+replicaCount: 1
+
 image:
-  tag: 7.3.2
+  tag: 7.5.0
 
 persistence:
   enabled: true
   storageClass: "meyrin-cephfs"
   accessMode: ReadWriteOnce
-  size: 20Gi
+  size: 10Gi
 
 volumeMounts:
   - name: data
@@ -16,6 +18,29 @@ volumeMounts:
     mountPath: /usr/share/logstash/files
   - name: pipeline
     mountPath: /usr/share/logstash/pipeline
+
+config:
+  queue.max_bytes: 10gb  # disk capacity must be greater than the value of `queue.max_bytes`
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: monitor
+  initialDelaySeconds: 60
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: monitor
+  initialDelaySeconds: 60
+
+#resources:
+#  limits:
+#    cpu: 800m
+#    memory: 1Gi
+#  resources:
+#    cpu: 800m
+#    memory: 1Gi
 
 exporter:
   logstash:
@@ -75,11 +100,6 @@ filters:
 
             if [clientip] =~ '\,\s' { mutate { gsub => ["clientip", ",\s.*$", ""] } } # Split client IP in case of proxy-forward (e.g. webui)
 
-            geoip {  # Resolve Client GEOIP
-              source => "clientip"
-              target => "client"
-              remove_field => [ "clientip" ]
-            }
           }
         }
       } else if [kubernetes][labels][app] == "rucio-daemons" {
@@ -102,7 +122,7 @@ outputs:
     output {
       http {
         url => "http://monit-logs.cern.ch:10012/"
-        format => "json"
+        format => "json_batch"
         http_method => "post"
       }
     }

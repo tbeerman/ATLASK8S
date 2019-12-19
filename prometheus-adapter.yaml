@@ -1,0 +1,12 @@
+image:
+  repository: docker.io/directxman12/k8s-prometheus-adapter-amd64
+
+priorityClassName: "system-cluster-critical"
+
+prometheus:
+  url: http://web.tcp.prometheus-prometheus.kube-system.svc.cluster.local
+
+resources:
+  requests:
+    cpu: 150m
+    memory: 400Mi

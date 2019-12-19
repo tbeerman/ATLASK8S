@@ -1,12 +1,12 @@
 image:
-  tag: 7.3.2
+  tag: 7.5.0
 
 config:
-  output:
-    file.enabled:
-      false
-    logstash:
-      hosts: ['logstash:5044']
+  output.file:
+    enabled: false
+
+  output.logstash:
+    hosts: ['logstash:5044']
 
 monitoring:
   enabled: true

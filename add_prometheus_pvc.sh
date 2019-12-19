@@ -1,10 +1,10 @@
 #!/bin/bash
 
-CLUSTER=atlasrucioint3
+export CLUSTER=atlasrucioint2
 mkdir -p ${HOME}/ws/helm_home_${CLUSTER}
-HELM_HOME="${HOME}/ws/helm_home_${CLUSTER}"
-HELM_TLS_ENABLE="true"
-TILLER_NAMESPACE="magnum-tiller"
+export HELM_HOME="${HOME}/ws/helm_home_${CLUSTER}"
+export HELM_TLS_ENABLE="true"
+export TILLER_NAMESPACE="magnum-tiller"
 
 kubectl -n magnum-tiller get secret helm-client-secret -o jsonpath='{.data.ca\.pem}' | base64 --decode > "${HELM_HOME}/ca.pem"
 kubectl -n magnum-tiller get secret helm-client-secret -o jsonpath='{.data.key\.pem}' | base64 --decode > "${HELM_HOME}/key.pem"
